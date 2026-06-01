@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0a0e14" />
+  <title>Mesh Cathedral — Ouroboros · 5 chakras · 45 kernels · live</title>
+  <meta name="description" content="One rotating 3D scene: all 5 SZL chakras (a11oy · amaru · sentra · rosie · killinchu) in the Ouroboros loop, 45 kernels glowing live, codex links from any chakra. Doctrine v11 LOCKED." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230a0e14'/><circle cx='16' cy='16' r='9' fill='none' stroke='%23d4a444' stroke-width='2'/></svg>" />
+  <style>
+    :root { --gold:#d4a444; --bg:#0a0e14; --panel:#0e131c; }
+    * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html,body { margin:0; padding:0; background:var(--bg); color:#e8eef6;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      overflow-x:hidden; max-width:100vw; }
+    #scene { position:fixed; inset:0; width:100vw; height:calc(var(--vh,1vh)*100); }
+    canvas { display:block; touch-action:none; }
+
+    /* Top HUD — chakra status badges */
+    #topHUD { position:fixed; top:0; left:0; right:0; z-index:20; display:flex; flex-wrap:wrap;
+      gap:6px; padding:8px 10px; padding-top:calc(8px + env(safe-area-inset-top));
+      background:linear-gradient(#0a0e14ee,#0a0e1400); pointer-events:none; }
+    .badge { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600;
+      padding:5px 9px; border-radius:999px; background:#0e131ccc; border:1px solid #ffffff14;
+      pointer-events:auto; cursor:pointer; min-height:30px; }
+    .dot { width:9px; height:9px; border-radius:50%; background:#6b7280; flex:none;
+      box-shadow:0 0 6px currentColor; }
+    .dot.green{ background:#34d399; color:#34d399;} .dot.amber{ background:#fbbf24; color:#fbbf24;}
+    .dot.red{ background:#f87171; color:#f87171;}
+    #allCodices { margin-left:auto; pointer-events:auto; }
+    .btn { font-family:inherit; font-size:12px; font-weight:700; color:#0a0e14; background:var(--gold);
+      border:none; border-radius:8px; padding:7px 12px; cursor:pointer; min-height:34px; }
+    .btn.ghost { background:transparent; color:var(--gold); border:1px solid var(--gold); }
+
+    /* Center counter */
+    #counter { position:fixed; top:60%; left:50%; transform:translate(-50%,-50%); z-index:5;
+      text-align:center; pointer-events:none; text-shadow:0 0 18px #000; }
+    #counterNum { font-size:clamp(34px,8vw,72px); font-weight:800; color:var(--gold);
+      letter-spacing:-1px; line-height:1; font-variant-numeric:tabular-nums; }
+    #counterLbl { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#9fb0c4; margin-top:6px; }
+
+    /* Bottom HUD — doctrine */
+    #botHUD { position:fixed; left:0; right:0; bottom:0; z-index:20; font-size:11.5px; color:#9fb0c4;
+      padding:8px 12px; padding-bottom:calc(8px + env(safe-area-inset-bottom));
+      background:linear-gradient(#0a0e1400,#0a0e14ee); text-align:center; line-height:1.5;
+      pointer-events:none; }
+    #botHUD b { color:#cfe0f2; }
+
+    /* Side panel (codex / kernel) */
+    #panel { position:fixed; top:0; right:0; z-index:40; width:min(420px,92vw); height:100%;
+      background:var(--panel); border-left:1px solid #ffffff14; box-shadow:-12px 0 40px #000a;
+      transform:translateX(105%); transition:transform .28s ease; overflow-y:auto;
+      padding:16px; padding-top:calc(16px + env(safe-area-inset-top)); }
+    #panel.open { transform:translateX(0); }
+    #panel h2 { margin:0 0 4px; font-size:20px; }
+    #panel .sub { color:#9fb0c4; font-size:12px; margin-bottom:14px; }
+    #panel h3 { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--gold);
+      margin:18px 0 8px; }
+    #panel a.link { display:block; color:#7fc7ff; text-decoration:none; font-size:14px; padding:9px 10px;
+      border:1px solid #ffffff14; border-radius:8px; margin-bottom:7px; background:#0a0e14; min-height:40px; }
+    #panel a.link:hover { border-color:var(--gold); }
+    #panel .kv { font-size:13px; color:#cfe0f2; margin:5px 0; }
+    #panelClose { position:absolute; top:10px; right:12px; background:none; border:none; color:#9fb0c4;
+      font-size:26px; cursor:pointer; line-height:1; padding:4px 8px; }
+    #kernelList { display:flex; flex-wrap:wrap; gap:6px; }
+    .ktag { font-size:11px; padding:4px 8px; border-radius:6px; background:#0a0e14; border:1px solid #ffffff1f;
+      color:#cfe0f2; }
+    .ktag.vert { border-color:var(--gold); color:var(--gold); }
+
+    /* Loader */
+    #loader { position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+      background:var(--bg); color:var(--gold); font-size:14px; letter-spacing:2px; }
+    #loader.hidden { display:none; }
+
+    /* Mobile tweaks */
+    @media (max-width:620px){
+      #topHUD { gap:4px; }
+      .badge { font-size:11px; padding:4px 7px; }
+      #botHUD { font-size:10px; }
+    }
+    /* Mobile = vertical 5-row badge stack (founder: collapse to vertical 5-row layout) */
+    body.szl-mobile #topHUD { flex-direction:column; align-items:flex-start; max-width:60vw; }
+    body.szl-mobile .badge { width:100%; justify-content:flex-start; }
+    body.szl-mobile #allCodices { margin-left:0; width:100%; }
+  </style>
+  <!-- Three.js r171 via importmap (per build spec) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.171.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.171.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="loader">ASSEMBLING THE MESH CATHEDRAL…</div>
+  <div id="scene"></div>
+
+  <div id="topHUD" aria-label="Chakra live status badges">
+    <!-- badges injected by kernels.js -->
+    <button class="btn" id="allCodices" aria-label="Open all codices unified search">All Codices ⌕</button>
+  </div>
+
+  <div id="counter" aria-live="polite">
+    <div id="counterNum">—</div>
+    <div id="counterLbl">signed receipts across the mesh</div>
+  </div>
+
+  <div id="botHUD">
+    <span><b>Doctrine v11 LOCKED</b> · 749 declarations · 14 unique axioms · 163 sorries
+    · 13-axis yuyay_v3 · build <b id="buildSha">…</b></span>
+  </div>
+
+  <aside id="panel" aria-label="Codex / kernel panel">
+    <button id="panelClose" aria-label="Close panel">×</button>
+    <div id="panelBody"></div>
+  </aside>
+
+  <!-- mobile controls (vanilla, sets window.SZLMobileControls) -->
+  <script src="./static/szl-mobile-controls.js"></script>
+  <script type="module" src="./src/scene.js"></script>
+</body>
+</html>
